@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Prototype Notice · Crowdfunding Success Predictor{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <div class="section-heading">
+    <span class="step-badge">Step 2 of 5</span>
+    <div>
+      <h1>Before you continue</h1>
+      <p>This is a portfolio and decision-support prototype.</p>
+    </div>
+  </div>
+
+  <div class="notice">
+    <ul>
+      <li>Your entries are not uploaded to Google Sheets or any external service.</li>
+      <li>Your progress is stored temporarily in a signed Flask session cookie.</li>
+      <li>The prediction is an estimate and should not be treated as financial advice.</li>
+      <li>No model can guarantee that a crowdfunding campaign will succeed.</li>
+    </ul>
+  </div>
+
+  <form action="{{ url_for('consent_submit') }}" method="post">
+    <label class="check-row">
+      <input type="checkbox" name="consent" value="yes" required>
+      <span>I understand the limitations and want to continue.</span>
+    </label>
+    <div class="actions">
+      <button class="button" type="submit">Start readiness assessment</button>
+      <a class="button button-secondary" href="{{ url_for('index') }}">Go back</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

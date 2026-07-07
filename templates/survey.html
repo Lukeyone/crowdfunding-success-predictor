@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Readiness Assessment · Part {{ part }}{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="section-heading">
+    <span class="step-badge">Step {{ part + 2 }} of 5</span>
+    <div>
+      <h1>Readiness assessment</h1>
+      <p>Part {{ part }} of 3 · Rate each statement from 1 to 10.</p>
+    </div>
+  </div>
+
+  <div class="scale-key">
+    <span><strong>1</strong> Not prepared</span>
+    <span><strong>10</strong> Fully prepared</span>
+  </div>
+
+  <form action="{{ url_for('survey_submit', part=part) }}" method="post">
+    <div class="question-list">
+      {% for number, prompt in questions %}
+      <fieldset class="question">
+        <legend><span class="question-number">{{ number }}</span>{{ prompt }}</legend>
+        <div class="rating-row" role="radiogroup" aria-label="{{ prompt }}">
+          {% for value in range(1, 11) %}
+          <label class="rating">
+            <input
+              type="radio"
+              name="q{{ number }}"
+              value="{{ value }}"
+              {% if existing_answers.get('q' ~ number|string) == value %}checked{% endif %}
+              required
+            >
+            <span>{{ value }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      {% endfor %}
+    </div>
+
+    <div class="actions">
+      <button class="button" type="submit">
+        {% if part < 3 %}Continue{% else %}View results{% endif %}
+      </button>
+      {% if part > 1 %}
+      <a class="button button-secondary" href="{{ url_for('survey_part', part=part - 1) }}">Previous part</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

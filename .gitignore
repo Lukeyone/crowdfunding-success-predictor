@@ -1,0 +1,21 @@
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*credentials*.json
+*service-account*.json
+predictive-software-project-*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# IDE and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

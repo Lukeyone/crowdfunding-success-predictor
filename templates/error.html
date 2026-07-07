@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Something Went Wrong · Crowdfunding Success Predictor{% endblock %}
+{% block content %}
+<section class="card narrow error-card">
+  <p class="eyebrow">Unable to continue</p>
+  <h1>Check your information</h1>
+  <p class="lead">{{ message }}</p>
+  <div class="actions">
+    <button class="button button-secondary" type="button" onclick="history.back()">Go back</button>
+    <a class="button" href="{{ url_for('index') }}">Start again</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Campaign Results · Crowdfunding Success Predictor{% endblock %}
+{% block content %}
+<section class="hero result-hero">
+  <p class="eyebrow">Assessment complete</p>
+  <h1>Your campaign snapshot</h1>
+  <p class="lead">Use these results as a starting point for further validation and planning.</p>
+</section>
+
+<section class="result-grid">
+  <article class="result-card">
+    <p class="result-label">Predicted success probability</p>
+    <p class="result-value">{{ (probability * 100) | round(1) }}%</p>
+    <p class="result-copy">An estimate produced from the structured campaign inputs supplied in step one.</p>
+  </article>
+
+  <article class="result-card">
+    <p class="result-label">Readiness score</p>
+    <p class="result-value">{{ score }}<span>/170</span></p>
+    <p class="result-copy">Your self-assessment across planning, audience, delivery and risk preparation.</p>
+  </article>
+
+  <article class="result-card accent-card">
+    <p class="result-label">Readiness category</p>
+    <p class="result-band">{{ band }}</p>
+    {% if band == "Newcomer" %}
+    <p class="result-copy">Strengthen the idea, budget and audience validation before committing to launch.</p>
+    {% elif band == "Visionary" %}
+    <p class="result-copy">The foundations are forming. Focus next on evidence, community and execution planning.</p>
+    {% elif band == "Trailblazer" %}
+    <p class="result-copy">Your campaign appears well prepared, with a few areas still worth stress-testing.</p>
+    {% else %}
+    <p class="result-copy">Your self-assessment indicates strong preparation. Validate assumptions with independent feedback.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="card">
+  <h2>Interpret responsibly</h2>
+  <p>
+    A high score or probability does not guarantee success. Crowdfunding outcomes
+    also depend on product quality, audience trust, economic conditions,
+    communication and delivery execution.
+  </p>
+  <form action="{{ url_for('restart') }}" method="post" class="actions">
+    <button class="button" type="submit">Evaluate another campaign</button>
+  </form>
+</section>
+{% endblock %}
