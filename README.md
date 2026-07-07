@@ -7,7 +7,7 @@
 A Flask application that estimates crowdfunding success probability and
 combines it with a structured campaign-readiness assessment.
 
-`Python` · `Flask` · `scikit-learn` · `Pandas` · `HTML/CSS`
+`Python` · `Flask` · `Logistic Regression` · `HTML/CSS`
 
 </div>
 
@@ -34,7 +34,7 @@ The final result combines:
 ```text
 Campaign details
       ↓
-Feature validation and engineering
+Input validation and feature scaling
       ↓
 Logistic-regression probability
       ↓
@@ -53,11 +53,13 @@ Combined campaign snapshot
 | Campaign length | Days between the planned start and end dates |
 | Campaign video | Whether the campaign includes a video |
 | Stretch goals | Whether additional milestones are defined |
-| Start month | One-hot encoded launch month |
-| End fortnight | One-hot encoded closing fortnight |
+| Start month | Encoded launch month |
+| End fortnight | Encoded closing fortnight |
 
-The model artefact is a scikit-learn logistic-regression classifier saved
-with scikit-learn 1.6.1.
+The original classifier was trained as a scikit-learn logistic-regression
+model. The clean public application implements the trained coefficients
+directly in `app.py`, avoiding unsafe or version-sensitive pickle loading
+at runtime.
 
 ## Readiness Categories
 
@@ -80,6 +82,7 @@ This clean public version:
 - Does not upload form responses to an external service
 - Stores progress temporarily in a signed Flask session cookie
 - Ignores `.env`, credential JSON and private-key files
+- Contains no serialized model or scaler files
 
 Anyone adding an external service must create and configure their **own**
 account and credentials. Never commit credentials to this repository.
@@ -89,7 +92,6 @@ account and credentials. Never commit credentials to this repository.
 ```text
 crowdfunding-success-predictor/
 ├── app.py
-├── model.pkl
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
@@ -173,7 +175,7 @@ The output is an estimate, not a guarantee or financial recommendation.
 Real crowdfunding outcomes also depend on audience trust, storytelling,
 execution, market conditions and fulfilment quality.
 
-The training data, model evaluation methodology and probability calibration
+The training data, evaluation methodology and probability calibration
 should be documented and independently reviewed before any production use.
 
 ## Planned Improvements

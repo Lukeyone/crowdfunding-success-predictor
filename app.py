@@ -1,21 +1,35 @@
 import datetime as dt
 import math
 import os
-import pickle
 import secrets
-from pathlib import Path
 
-import pandas as pd
 from flask import Flask, redirect, render_template, request, session, url_for
 
-BASE_DIR = Path(__file__).resolve().parent
-
-# Values learned by the StandardScaler used during model training.
-# Keeping these two parameters explicit avoids requiring a second pickle file.
+# Standardisation values learned during model training.
 FUNDING_GOAL_MEAN = 15639.8203125
 FUNDING_GOAL_SCALE = 46138.406823998324
 CAMPAIGN_LENGTH_MEAN = 48.953125
 CAMPAIGN_LENGTH_SCALE = 24.911988634678988
+
+# Trained logistic-regression parameters.
+MODEL_INTERCEPT = -2.194436751841851
+MODEL_COEFFICIENTS = {
+    "funding_goal": -2.17623576968482,
+    "campaign_length": 0.6572091546422656,
+    "has_video": 0.9925049209134896,
+    "has_stretch_goals": 0.021633895449800527,
+}
+START_MONTH_COEFFICIENTS = {
+    3: 1.3414971090112575,
+    8: 0.18505190784075107,
+    11: -1.1801947115322244,
+}
+END_FORTNIGHT_COEFFICIENTS = {
+    10: -0.616147376151242,
+    16: 0.709521095194844,
+    19: 1.3487429326772262,
+    20: 0.3402559750271717,
+}
 
 READINESS_QUESTIONS = {
     6: "I can clearly explain the problem my campaign solves.",
@@ -46,23 +60,28 @@ app.config.update(
     == "true",
 )
 
-with (BASE_DIR / "model.pkl").open("rb") as model_file:
-    model = pickle.load(model_file)
-
 
 def error_response(message: str, status_code: int = 400):
     """Render a consistent user-facing error page."""
     return render_template("error.html", message=message), status_code
 
 
-def preprocess_for_model(
+def logistic(value: float) -> float:
+    """Return a numerically stable logistic probability."""
+    if value >= 0:
+        return 1.0 / (1.0 + math.exp(-value))
+    exp_value = math.exp(value)
+    return exp_value / (1.0 + exp_value)
+
+
+def predict_success_probability(
     funding_goal: str,
     has_video: str,
     has_stretch_goals: str,
     start_date_raw: str,
     end_date_raw: str,
-):
-    """Validate and transform form inputs into the model's feature order."""
+) -> float:
+    """Validate inputs and calculate the trained model probability."""
     try:
         goal = float(funding_goal)
     except (TypeError, ValueError) as exc:
@@ -84,29 +103,24 @@ def preprocess_for_model(
     if campaign_length <= 0:
         raise ValueError("The campaign end date must be after the start date.")
 
-    row = {
-        "Funding Goal": (goal - FUNDING_GOAL_MEAN) / FUNDING_GOAL_SCALE,
-        "Campaign Length": (
-            campaign_length - CAMPAIGN_LENGTH_MEAN
-        )
-        / CAMPAIGN_LENGTH_SCALE,
-        "Has Video?_Yes": int(has_video),
-        "Stretch Goals?_Yes": int(has_stretch_goals),
-    }
-
-    # Month 1 and fortnight 1 were reference categories during training.
-    for month in range(2, 13):
-        row[f"Start Month_{month}"] = int(start_date.month == month)
-
+    scaled_goal = (goal - FUNDING_GOAL_MEAN) / FUNDING_GOAL_SCALE
+    scaled_length = (
+        campaign_length - CAMPAIGN_LENGTH_MEAN
+    ) / CAMPAIGN_LENGTH_SCALE
     end_fortnight = ((end_date.timetuple().tm_yday - 1) // 14) + 1
-    for fortnight in range(2, 28):
-        row[f"End Fortnight_{fortnight}"] = int(
-            end_fortnight == fortnight
-        )
 
-    features = pd.DataFrame([row])
-    features = features.reindex(columns=model.feature_names_in_, fill_value=0)
-    return features
+    linear_score = MODEL_INTERCEPT
+    linear_score += MODEL_COEFFICIENTS["funding_goal"] * scaled_goal
+    linear_score += MODEL_COEFFICIENTS["campaign_length"] * scaled_length
+    linear_score += MODEL_COEFFICIENTS["has_video"] * int(has_video)
+    linear_score += (
+        MODEL_COEFFICIENTS["has_stretch_goals"]
+        * int(has_stretch_goals)
+    )
+    linear_score += START_MONTH_COEFFICIENTS.get(start_date.month, 0.0)
+    linear_score += END_FORTNIGHT_COEFFICIENTS.get(end_fortnight, 0.0)
+
+    return logistic(linear_score)
 
 
 def parse_readiness_answers(question_numbers: range) -> int:
@@ -151,13 +165,12 @@ def predict():
         "funding_goal": request.form.get("funding_goal", ""),
         "has_video": request.form.get("has_video", ""),
         "has_stretch_goals": request.form.get("has_stretch_goals", ""),
-        "start_date": request.form.get("start_date", ""),
-        "end_date": request.form.get("end_date", ""),
+        "start_date_raw": request.form.get("start_date", ""),
+        "end_date_raw": request.form.get("end_date", ""),
     }
 
     try:
-        features = preprocess_for_model(**form_values)
-        probability = float(model.predict_proba(features)[0][1])
+        probability = predict_success_probability(**form_values)
     except ValueError as exc:
         return error_response(str(exc))
     except Exception:
@@ -167,7 +180,6 @@ def predict():
             500,
         )
 
-    session.update(form_values)
     session["predicted_probability"] = probability
     return redirect(url_for("consent"))
 
@@ -217,6 +229,9 @@ def survey_part(part: int):
 
 @app.post("/survey/<int:part>")
 def survey_submit(part: int):
+    if not session.get("consent"):
+        return redirect(url_for("consent"))
+
     ranges = {
         1: range(6, 9),
         2: range(9, 17),
