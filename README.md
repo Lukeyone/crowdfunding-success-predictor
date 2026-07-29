@@ -7,7 +7,9 @@
 A Flask application that estimates crowdfunding success probability and
 combines it with a structured campaign-readiness assessment.
 
-`Python` · `Flask` · `Logistic Regression` · `HTML/CSS`
+[![CI](https://github.com/Lukeyone/crowdfunding-success-predictor/actions/workflows/ci.yml/badge.svg)](https://github.com/Lukeyone/crowdfunding-success-predictor/actions/workflows/ci.yml)
+
+`Python` · `Flask` · `Logistic Regression` · `Pytest` · `GitHub Actions`
 
 </div>
 
@@ -19,8 +21,8 @@ The **Crowdfunding Success Predictor** helps founders assess a planned
 crowdfunding campaign before launch.
 
 Users enter a small set of campaign attributes, receive an estimated
-probability of success, and then complete a 17-question readiness
-assessment covering audience, planning, delivery and risk.
+probability of success, and then complete a 17-question readiness assessment
+covering audience, planning, delivery and risk.
 
 The final result combines:
 
@@ -58,8 +60,8 @@ Combined campaign snapshot
 
 The original classifier was trained as a scikit-learn logistic-regression
 model. The clean public application implements the trained coefficients
-directly in `app.py`, avoiding unsafe or version-sensitive pickle loading
-at runtime.
+directly in `app.py`, avoiding unsafe or version-sensitive pickle loading at
+runtime.
 
 ## Readiness Categories
 
@@ -72,6 +74,50 @@ at runtime.
 
 These categories are rule-based and should be treated as planning guidance,
 not as independently validated psychological or financial measures.
+
+## Testing and Continuous Integration
+
+The automated suite covers:
+
+- logistic-function stability and a fixed reference prediction;
+- funding-goal, feature-selection and date validation;
+- every readiness-category boundary;
+- session-dependent route access and redirects;
+- consent and all three survey stages;
+- incomplete and out-of-range survey answers;
+- the complete prediction-to-result workflow;
+- unexpected inference failures; and
+- assessment restart and session clearing.
+
+Branch coverage for `app.py` is enforced at a minimum of 90%. GitHub Actions
+runs the suite on Python 3.11 and 3.12 for pull requests, pushes to `main` and
+manual workflow runs.
+
+Run the same checks locally:
+
+```bash
+python -m pip install -r requirements.txt -r requirements-dev.txt
+pytest --cov=app --cov-branch --cov-report=term-missing
+```
+
+## Evaluation Status
+
+The public repository can reproduce application behaviour and the embedded
+coefficient-based inference calculation. It cannot independently reproduce the
+original model training because the private training dataset, split artefacts
+and serialized model are intentionally excluded.
+
+The evaluation documentation distinguishes:
+
+- behaviour verified by the repository and automated tests;
+- historically recorded model results that are not independently reproducible
+  from this sanitised release; and
+- calibration, subgroup, robustness and external-validation work still needed
+  before production use.
+
+See **[Evaluation and Evidence Status](docs/EVALUATION.md)** for the full test
+matrix, reference inference case, historical-evidence boundary, known
+limitations and recommended model-evaluation protocol.
 
 ## Privacy and Credentials
 
@@ -91,20 +137,29 @@ account and credentials. Never commit credentials to this repository.
 
 ```text
 crowdfunding-success-predictor/
-├── app.py
-├── requirements.txt
-├── .env.example
-├── .gitignore
-├── SECURITY.md
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── docs/
+│   └── EVALUATION.md
 ├── static/
 │   └── style.css
-└── templates/
-    ├── base.html
-    ├── consent.html
-    ├── error.html
-    ├── predict.html
-    ├── result.html
-    └── survey.html
+├── templates/
+│   ├── base.html
+│   ├── consent.html
+│   ├── error.html
+│   ├── predict.html
+│   ├── result.html
+│   └── survey.html
+├── tests/
+│   └── test_app.py
+├── app.py
+├── pyproject.toml
+├── requirements.txt
+├── requirements-dev.txt
+├── .env.example
+├── .gitignore
+└── SECURITY.md
 ```
 
 ## Local Setup
@@ -134,8 +189,16 @@ source .venv/bin/activate
 
 ### 3. Install dependencies
 
+Application only:
+
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+```
+
+Application and test tools:
+
+```bash
+python -m pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 ### 4. Configure the Flask session key
@@ -171,21 +234,22 @@ Open `http://127.0.0.1:5000`.
 
 ## Responsible Use
 
-The output is an estimate, not a guarantee or financial recommendation.
-Real crowdfunding outcomes also depend on audience trust, storytelling,
-execution, market conditions and fulfilment quality.
+The output is an estimate, not a guarantee or financial recommendation. Real
+crowdfunding outcomes also depend on audience trust, storytelling, execution,
+market conditions and fulfilment quality.
 
-The training data, evaluation methodology and probability calibration
-should be documented and independently reviewed before any production use.
+The historical model results are not independently reproducible from this
+sanitised repository. Probability calibration, threshold selection, subgroup
+performance and external validation remain open evaluation requirements.
 
 ## Planned Improvements
 
-- Add automated unit and integration tests
-- Document the training dataset and evaluation results
-- Add probability-calibration analysis
-- Add prediction explanations
-- Add Docker and GitHub Actions
-- Add structured logging and production deployment configuration
+- Add probability-calibration analysis when an approved evaluation dataset is
+  available
+- Add prediction explanations that remain faithful to the linear model
+- Add Docker and production deployment configuration
+- Add structured logging and operational monitoring
+- Add versioned model and preprocessing metadata
 
 ## Background
 
@@ -197,7 +261,8 @@ credentials.
 ## Author
 
 **Lachlan McDonald**  
-Applied AI Engineer · Software Engineer · Data Scientist
+Applied AI & Software Engineer
 
 [LinkedIn](https://www.linkedin.com/in/lachlanmcdonaldtech) ·
-[Email](mailto:lachornot@gmail.com)
+[Portfolio](https://lukeyone.github.io/) ·
+[Email](mailto:lachlanmcdonald2000@gmail.com)
